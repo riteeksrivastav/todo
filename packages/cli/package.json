@@ -13,6 +13,7 @@
   "dependencies": {
     "@todo/core": "*",
     "@todo/server": "*",
+    "@todo/tui": "*",
     "commander": "^12.1.0",
     "kleur": "^4.1.5"
   },

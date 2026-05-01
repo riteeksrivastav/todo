@@ -53,7 +53,20 @@ todo update <id> --date 2026-05-04
 todo update <id> --priority none
 todo delete <id>
 todo serve                      # start API on http://127.0.0.1:4567
+todo tui                        # open the interactive terminal UI
 ```
+
+Running `todo` with no arguments opens the TUI.
+
+## TUI
+
+`todo tui` (or just `todo`) launches an Ink-based terminal UI:
+
+- Today on the left, Upcoming + Past on the right.
+- Keys: `↑↓ j k` move, `tab` switch panes, `a` add, `e` edit content,
+  `space`/`x` toggle done, `d` delete (then `u` to undo within 5s),
+  `s` cycle sort, `+`/`-` expand/shrink window, `r` reload, `?` help, `q` quit.
+- The add bar accepts the same inline tokens as the web UI: `#tag`, `!high`, `^tomorrow`.
 
 ## Web UI
 

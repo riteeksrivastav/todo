@@ -7,6 +7,7 @@ import { doneCommand } from './commands/done.js';
 import { deleteCommand } from './commands/delete.js';
 import { updateCommand } from './commands/update.js';
 import { serveCommand } from './commands/serve.js';
+import { tuiCommand } from './commands/tui.js';
 
 const program = new Command();
 program
@@ -68,7 +69,25 @@ program
   .option('--port <number>', 'override port', (v) => parseInt(v, 10))
   .action(serveCommand);
 
-program.parseAsync().catch((err: Error) => {
-  console.error(kleur.red('error: ') + err.message);
-  process.exit(1);
-});
+program
+  .command('tui')
+  .description('open the interactive terminal UI')
+  .action(tuiCommand);
+
+// no-arg default: launch TUI if attached to a terminal, else show help
+const userArgs = process.argv.slice(2);
+if (userArgs.length === 0) {
+  if (process.stdout.isTTY) {
+    tuiCommand().catch((err: Error) => {
+      console.error(kleur.red('error: ') + err.message);
+      process.exit(1);
+    });
+  } else {
+    program.outputHelp();
+  }
+} else {
+  program.parseAsync().catch((err: Error) => {
+    console.error(kleur.red('error: ') + err.message);
+    process.exit(1);
+  });
+}
