@@ -1,0 +1,23 @@
+{
+  "name": "@todo/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "todo": "bin/todo"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "dependencies": {
+    "@todo/core": "*",
+    "@todo/server": "*",
+    "commander": "^12.1.0",
+    "kleur": "^4.1.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.0"
+  }
+}
