@@ -60,6 +60,8 @@ Running `todo` with no arguments opens the TUI.
 
 ## TUI
 
+![TUI screenshot](docs/tui.png)
+
 `todo tui` (or just `todo`) launches an Ink-based terminal UI:
 
 - Today on the left, Upcoming + Past on the right.
