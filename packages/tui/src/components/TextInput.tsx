@@ -32,11 +32,21 @@ export function TextInput({ value, onChange, onSubmit, onCancel, placeholder }: 
     }
   });
 
-  const display = value.length > 0 ? value : (placeholder ?? '');
-  const dim = value.length === 0;
+  if (value.length === 0 && placeholder) {
+    // cursor sits on the first placeholder char; rest of placeholder is dim
+    const head = placeholder[0] ?? ' ';
+    const tail = placeholder.slice(1);
+    return (
+      <Box>
+        <Text backgroundColor="cyan" color="black">{head}</Text>
+        <Text color="gray">{tail}</Text>
+      </Box>
+    );
+  }
+
   return (
     <Box>
-      <Text color={dim ? 'gray' : 'white'}>{display}</Text>
+      <Text color="white">{value}</Text>
       <Text color="cyan">{'█'}</Text>
     </Box>
   );
