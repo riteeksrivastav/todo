@@ -65,12 +65,21 @@ Running `todo` with no arguments opens the TUI.
 `todo tui` (or just `todo`) launches an Ink-based terminal UI:
 
 - Today on the left, Upcoming + Past on the right.
-- Keys: `↑↓ j k` move, `tab` switch panes, `a` add, `e` edit content,
+- Keys: `↑↓ j k` move, `tab` switch panes, `z` zoom focused pane to fullscreen,
+  `a` add, `e` edit content, `E` edit full (date / tags / priority),
   `space`/`x` toggle done, `d` delete (then `u` to undo within 5s),
   `s` cycle sort, `+`/`-` expand/shrink window, `r` reload, `?` help, `q` quit.
 - The add bar accepts the same inline tokens as the web UI: `#tag`, `!high`, `^tomorrow`.
 
+Press `z` to zoom the focused pane to fullscreen — useful when you want to see
+just Today, or just Upcoming/Past, with more vertical room. `tab` un-zooms and
+switches focus, so a single keystroke flips between sides.
+
+![TUI zoomed pane](docs/tui-zoom.png)
+
 ## Web UI
+
+![Web UI screenshot](docs/web.png)
 
 In one terminal:
 ```sh
@@ -85,8 +94,10 @@ npm run dev:web
 Open <http://localhost:5173>. The Vite dev server proxies `/api/*` to the backend.
 
 The UI shows:
-- **Today** on the left — large, focused, with an inline add bar.
-- **Upcoming** and **Past 30 days** on the right — collapsible per-day groups.
+- **Today** as the centered main column — large and focused.
+- **Upcoming & Past** in a collapsible side panel; toggle from the top-right
+  button. Open by default; preference is persisted in localStorage.
+- A round `+` button below the list expands into the add bar with a syntax hint.
 - Completed todos sink to the bottom of each day.
 - Overdue incomplete todos are rolled forward to today and tagged with their original date.
 - Click a todo to edit; trash icon to delete with a 5s undo toast.
