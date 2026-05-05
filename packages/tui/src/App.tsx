@@ -14,7 +14,9 @@ import {
   sortForDate,
   todayISO,
   updateTodo,
+  isValidDate,
   type Config,
+  type Priority,
   type SortMode,
   type Todo,
 } from '@todo/core';
@@ -26,7 +28,8 @@ import { dateLabel, fullDateLabel } from './lib/dates.js';
 import { parseAdd } from './lib/parseAdd.js';
 
 type Pane = 'today' | 'side';
-type Mode = 'normal' | 'add' | 'editContent' | 'help';
+type Mode = 'normal' | 'add' | 'editContent' | 'editFull' | 'help';
+type EditStep = 'content' | 'date' | 'tags' | 'priority';
 
 interface FlatItem {
   kind: 'header' | 'todo';
@@ -59,11 +62,20 @@ export function App() {
 
   const [sortMode, setSortMode] = useState<SortMode>(() => readSort(config));
   const [pane, setPane] = useState<Pane>('today');
+  const [zoomed, setZoomed] = useState(false);
   const [mode, setMode] = useState<Mode>('normal');
   const [todaySel, setTodaySel] = useState(0);
   const [sideSel, setSideSel] = useState(0);
   const [draft, setDraft] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editStep, setEditStep] = useState<EditStep>('content');
+  const [editDraft, setEditDraft] = useState('');
+  const [editPatch, setEditPatch] = useState<{
+    content: string;
+    date: string;
+    tags: string[];
+    priority: Priority | null;
+  }>({ content: '', date: '', tags: [], priority: null });
   const [pendingDelete, setPendingDelete] = useState<Todo | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
 
@@ -167,12 +179,26 @@ export function App() {
 
   // ---- key handling ----
   useInput((input, key) => {
+    // priority step in the structured editor handles its own keys here
+    if (mode === 'editFull' && editStep === 'priority') {
+      if (key.escape) { cancelInput(); return; }
+      const ch = (input ?? '').toLowerCase();
+      if (ch === 'h') { void commitEditFull('high'); return; }
+      if (ch === 'm') { void commitEditFull('medium'); return; }
+      if (ch === 'l') { void commitEditFull('low'); return; }
+      if (ch === 'n' || key.return) { void commitEditFull(null); return; }
+      return;
+    }
     if (mode !== 'normal') return; // input components own their keys
 
     // special keys (only meaningful when no plain chars accompanied them)
     if (!input) {
       if (key.escape) { exit(); return; }
-      if (key.tab) { setPane((p) => (p === 'today' ? 'side' : 'today')); return; }
+      if (key.tab) {
+        setPane((p) => (p === 'today' ? 'side' : 'today'));
+        setZoomed(false);
+        return;
+      }
       if (key.upArrow) return moveSel(-1);
       if (key.downArrow) return moveSel(1);
       return;
@@ -225,6 +251,17 @@ export function App() {
       }
       return null;
     }
+    if (ch === 'E') {
+      const t = selectedTodo();
+      if (t) {
+        setEditingId(t.id);
+        setEditPatch({ content: t.content, date: t.date, tags: [...t.tags], priority: t.priority ?? null });
+        setEditDraft(t.content);
+        setEditStep('content');
+        setMode('editFull');
+      }
+      return null;
+    }
     if (ch === ' ' || ch === 'x') {
       const t = selectedTodo();
       if (t) void markDone(config, t.id, !t.done).then(reload);
@@ -250,6 +287,7 @@ export function App() {
       return null;
     }
     if (ch === 's') { cycleSort(); return null; }
+    if (ch === 'z') { setZoomed((z) => !z); return null; }
     if (ch === '+') { setWindowDays((w) => (w === 7 ? 30 : w)); setFlash('window: ±30 days'); return null; }
     if (ch === '-') { setWindowDays((w) => (w === 30 ? 7 : w)); setFlash('window: ±7 days'); return null; }
     if (ch === 'r') { setFlash('reloaded'); void reload(); return null; }
@@ -291,14 +329,63 @@ export function App() {
 
   function cancelInput() {
     setDraft('');
+    setEditDraft('');
     setEditingId(null);
     setMode('normal');
   }
 
+  function advanceEditStep() {
+    const value = editDraft;
+    if (editStep === 'content') {
+      const content = value.trim();
+      if (!content) { setFlash('content cannot be empty'); return; }
+      setEditPatch((p) => ({ ...p, content }));
+      setEditDraft(editPatch.date);
+      setEditStep('date');
+      return;
+    }
+    if (editStep === 'date') {
+      const d = value.trim();
+      if (!isValidDate(d)) { setFlash(`invalid date: ${d}`); return; }
+      setEditPatch((p) => ({ ...p, date: d }));
+      setEditDraft(editPatch.tags.map((t) => `#${t}`).join(' '));
+      setEditStep('tags');
+      return;
+    }
+    if (editStep === 'tags') {
+      const tags = value
+        .split(/\s+/)
+        .map((t) => t.replace(/^#/, '').trim())
+        .filter(Boolean);
+      setEditPatch((p) => ({ ...p, tags }));
+      setEditDraft('');
+      setEditStep('priority');
+      return;
+    }
+  }
+
+  async function commitEditFull(priority: Priority | null) {
+    const id = editingId;
+    if (!id) { setMode('normal'); return; }
+    await updateTodo(config, id, {
+      content: editPatch.content,
+      date: editPatch.date,
+      tags: editPatch.tags,
+      priority,
+    });
+    setEditingId(null);
+    setEditDraft('');
+    setEditStep('content');
+    setMode('normal');
+    await reload();
+  }
+
   // ---- layout ----
   const stacked = cols < 100;
-  const sideWidth = stacked ? cols : Math.floor(cols / 2);
-  const todayWidth = stacked ? cols : cols - sideWidth;
+  const showToday = !zoomed || pane === 'today';
+  const showSide = !zoomed || pane === 'side';
+  const sideWidth = zoomed ? cols : (stacked ? cols : Math.floor(cols / 2));
+  const todayWidth = zoomed ? cols : (stacked ? cols : cols - sideWidth);
   const bodyHeight = Math.max(8, rows - 6);
 
   return (
@@ -310,6 +397,7 @@ export function App() {
           <Text color="gray">— {fullDateLabel(today)}</Text>
         </Box>
         <Box>
+          {zoomed && <Text color="cyan">[zoomed] </Text>}
           <Text color="gray">sort: </Text>
           <Text color="cyan">{sortMode}</Text>
           <Text color="gray">  window: ±{windowDays}d</Text>
@@ -325,6 +413,7 @@ export function App() {
       ) : (
         <Box flexDirection={stacked ? 'column' : 'row'} flexGrow={1} paddingX={1}>
           {/* today pane */}
+          {showToday && (
           <Box
             flexDirection="column"
             width={todayWidth - 2}
@@ -351,8 +440,10 @@ export function App() {
               )}
             </Box>
           </Box>
+          )}
 
           {/* side pane */}
+          {showSide && (
           <Box
             flexDirection="column"
             width={sideWidth - 2}
@@ -390,6 +481,7 @@ export function App() {
               )}
             </Box>
           </Box>
+          )}
         </Box>
       )}
 
@@ -418,12 +510,32 @@ export function App() {
             />
           </Box>
         )}
+        {mode === 'editFull' && editStep !== 'priority' && (
+          <Box>
+            <Text color="cyan">{editStepLabel(editStep)} </Text>
+            <TextInput
+              value={editDraft}
+              onChange={setEditDraft}
+              onSubmit={advanceEditStep}
+              onCancel={cancelInput}
+              placeholder={editStepPlaceholder(editStep)}
+            />
+          </Box>
+        )}
+        {mode === 'editFull' && editStep === 'priority' && (
+          <Box>
+            <Text color="cyan">priority </Text>
+            <Text color="gray">
+              <Text color="red">h</Text>igh / <Text color="yellow">m</Text>ed / <Text color="blue">l</Text>ow / <Text color="white">n</Text>one
+            </Text>
+          </Box>
+        )}
         {mode === 'normal' && flash && (
           <Box>
             <Text color="green">{flash}</Text>
           </Box>
         )}
-        <HelpBar mode={mode === 'editContent' ? 'edit' : mode} />
+        <HelpBar mode={helpBarMode(mode)} />
       </Box>
     </Box>
   );
@@ -432,6 +544,27 @@ export function App() {
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
+
+function editStepLabel(step: EditStep): string {
+  if (step === 'content') return 'content ';
+  if (step === 'date') return 'date    ';
+  if (step === 'tags') return 'tags    ';
+  return 'priority';
+}
+
+function editStepPlaceholder(step: EditStep): string {
+  if (step === 'date') return 'YYYY-MM-DD';
+  if (step === 'tags') return '#work #urgent (space separated)';
+  return '';
+}
+
+function helpBarMode(m: Mode): 'normal' | 'add' | 'edit' | 'help' {
+  if (m === 'editContent' || m === 'editFull') return 'edit';
+  if (m === 'add') return 'add';
+  if (m === 'help') return 'help';
+  return 'normal';
+}
+
 
 function truncate(s: string, n: number): string {
   return s.length <= n ? s : s.slice(0, n - 1) + '…';

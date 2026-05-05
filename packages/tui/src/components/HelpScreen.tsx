@@ -4,9 +4,10 @@ import { Box, Text } from 'ink';
 const KEYS: Array<[string, string]> = [
   ['↑ ↓ j k', 'move selection up/down'],
   ['tab',     'switch between Today and Side panes'],
+  ['z',       'zoom focused pane to fullscreen (toggle)'],
   ['a',       'add new todo (inline at bottom)'],
   ['e',       'edit content inline'],
-  ['E',       'edit full (date / tags / priority)'],
+  ['E',       'edit full (content / date / tags / priority)'],
   ['space x', 'toggle done'],
   ['d',       'delete (press u to undo within 5s)'],
   ['u',       'undo last delete'],

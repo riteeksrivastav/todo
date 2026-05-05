@@ -20,7 +20,7 @@ export function HelpBar({ mode }: Props) {
     return (
       <Box>
         <Text color="gray">
-          <Text color="cyan">enter</Text> save  <Text color="cyan">esc</Text> cancel
+          <Text color="cyan">enter</Text> next/save  <Text color="cyan">esc</Text> cancel
         </Text>
       </Box>
     );
@@ -37,7 +37,7 @@ export function HelpBar({ mode }: Props) {
   return (
     <Box>
       <Text color="gray">
-        <Text color="cyan">↑↓/jk</Text> move  <Text color="cyan">tab</Text> pane
+        <Text color="cyan">↑↓/jk</Text> move  <Text color="cyan">tab</Text> pane  <Text color="cyan">z</Text> zoom
         <Text color="cyan"> a</Text> add  <Text color="cyan">e</Text> edit
         <Text color="cyan"> space</Text> done  <Text color="cyan">d</Text> del
         <Text color="cyan"> u</Text> undo  <Text color="cyan">s</Text> sort
