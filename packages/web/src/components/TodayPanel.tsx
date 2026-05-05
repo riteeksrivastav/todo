@@ -29,15 +29,9 @@ export function TodayPanel({ today, todos, sortMode, onAdd, onToggle, onEdit, on
         </p>
       </header>
 
-      <AddTodoForm defaultDate={today} onAdd={onAdd} />
-
-      <div className="card divide-y divide-zinc-100">
-        {sorted.length === 0 ? (
-          <div className="px-4 py-12 text-center text-zinc-400 text-sm">
-            Nothing on your list. Add something above.
-          </div>
-        ) : (
-          sorted.map((t) => (
+      {sorted.length > 0 && (
+        <div className="card divide-y divide-zinc-100">
+          {sorted.map((t) => (
             <TodoItem
               key={t.id}
               todo={t}
@@ -45,9 +39,17 @@ export function TodayPanel({ today, todos, sortMode, onAdd, onToggle, onEdit, on
               onEdit={() => onEdit(t)}
               onDelete={() => onDelete(t)}
             />
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
+
+      <AddTodoForm defaultDate={today} onAdd={onAdd} />
+
+      {sorted.length === 0 && (
+        <div className="px-4 py-8 text-center text-zinc-400 text-sm">
+          Nothing on your list yet.
+        </div>
+      )}
     </section>
   );
 }
